@@ -1,5 +1,4 @@
 import os
-from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ConversationHandler
 
 from bot.handlers import start, show_statistics, cancel, back_to_menu
@@ -27,10 +26,7 @@ from constants import (
 
 from db.database import init_db
 
-load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-if not TOKEN:
-    raise ValueError('Токен не найден! Убедитесь, что он указан в файле .env')
 
 
 def main():
