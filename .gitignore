@@ -3,5 +3,7 @@ __pycache__/
 *.pyc
 books.db
 books.db-journal
+python_find_user.py
 venv/
 .env
+python find_user.py
