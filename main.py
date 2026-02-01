@@ -12,22 +12,28 @@ from bot.conversations import (
     start_view_books,
     handle_selected_year,
     handle_invalid_year_input,
-    cancel_adding
+    cancel_adding,
+    start_delete_from_list,
+    handle_delete_number,
+    confirm_delete,
 )
 
-# Константы состояний
 from constants import (
     ADD_AUTHOR,
     ADD_TITLE,
     ADD_RATING,
     ADD_CONFIRM,
-    VIEW_WAITING_FOR_YEAR
+    VIEW_WAITING_FOR_YEAR,
+    DELETE_CONFIRM,
+    DELETE_WAITING_FOR_NUMBER
 )
 
 from db.database import init_db
 
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+if not TOKEN:
+    raise ValueError("❌ TELEGRAM_BOT_TOKEN не найден! Проверьте переменные окружения.")
 
 def main():
     init_db()
@@ -58,11 +64,19 @@ def main():
                 MessageHandler(filters.Regex(r'(?i)^(да|yes)$'), confirm_book)
             ],
 
-            # Просмотр книг
             VIEW_WAITING_FOR_YEAR: [
                 MessageHandler(filters.Regex(r'(?i)^назад$'), back_to_menu),
+                MessageHandler(filters.Regex(r'(?i)^удалить книгу$'), start_delete_from_list),
                 MessageHandler(filters.Regex(r'^\d{4}$'), handle_selected_year),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_invalid_year_input)
+            ],
+            DELETE_WAITING_FOR_NUMBER: [
+                MessageHandler(filters.Regex(r'(?i)^отмена$'), cancel_adding),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handle_delete_number)
+            ],
+            DELETE_CONFIRM: [
+                MessageHandler(filters.Regex(r'(?i)^отмена$'), cancel_adding),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, confirm_delete)
             ],
         },
         fallbacks=[CommandHandler('cancel', cancel)]

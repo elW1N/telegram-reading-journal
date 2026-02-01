@@ -20,7 +20,9 @@ MONTHS_RU = {
     12: "Декабрь"
 }
 
-# Состояния для просмотра книг
-VIEW_YEAR = 4  # или просто VIEW_YEAR = "view_year", но лучше число
+VIEW_YEAR = 4
 
 VIEW_WAITING_FOR_YEAR = "view_waiting_for_year"
+
+DELETE_WAITING_FOR_NUMBER = "delete_waiting_for_number"
+DELETE_CONFIRM = "delete_confirm"

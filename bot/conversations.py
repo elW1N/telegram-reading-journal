@@ -10,7 +10,7 @@ from telegram.ext import (
     )
 
 from constants import *
-from db.database import get_books_by_year, get_all_years, add_book
+from db.database import get_books_by_year, get_all_years, add_book, delete_book_by_user_and_date
 from bot.handlers import get_main_menu
 
 
@@ -18,7 +18,7 @@ from bot.handlers import get_main_menu
 
 async def start_add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    keyboard = [["Назад"]]
+    keyboard = [["Отмена"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
     await update.message.reply_text(
@@ -221,18 +221,20 @@ async def handle_selected_year(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if not (text.isdigit() and len(text) == 4):
         await update.message.reply_text("Пожалуйста, введите год в формате YYYY (например, 2025).")
-        return "WAITING_FOR_YEAR"  # остаёмся в состоянии
+        return VIEW_WAITING_FOR_YEAR
 
     year = text
     books = get_books_by_year(user_id, year)
 
     if not books:
         await update.message.reply_text(f"В {year} году у вас нет прочитанных книг.\nВведите другой год:")
-        return "WAITING_FOR_YEAR"
+        return VIEW_WAITING_FOR_YEAR
 
-    # Формируем сообщение (как раньше)
+    context.user_data['books_for_deletion'] = books
+    context.user_data['year_for_deletion'] = year
+
     total = len(books)
-    message = f"{year}год - {total}кн.\n\n"
+    message = f"{year} год — {total} кн.\n\n"
     current_month = None
     book_number = 1
 
@@ -250,12 +252,16 @@ async def handle_selected_year(update: Update, context: ContextTypes.DEFAULT_TYP
     if len(message) > 4000:
         message = message[:4000] + "\n... (список сокращён)"
 
+    keyboard = [
+        ["Назад", "Удалить книгу"]
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
     await update.message.reply_text(
         message,
-        parse_mode="HTML",
-        reply_markup=get_main_menu()
-        )
-    return ConversationHandler.END
+        reply_markup=reply_markup
+    )
+    return VIEW_WAITING_FOR_YEAR
 
 async def handle_invalid_year_input(
         update: Update,
@@ -272,4 +278,71 @@ async def cancel_adding(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "❌ Добавление книги отменено.",
         reply_markup=get_main_menu()
     )
+    return ConversationHandler.END
+
+async def start_delete_from_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    books = context.user_data.get('books_for_deletion')
+    if not books:
+        await update.message.reply_text("Список книг недоступен. Попробуйте снова.")
+        return VIEW_WAITING_FOR_YEAR
+
+    message = "🗑️ Напишите номер книги для удаления:\n\n"
+    for i, (title, author, rating, _) in enumerate(books, 1):
+        message += f"{i}. {author} «{title}»\n"
+
+    keyboard = [["Отмена"]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(message, reply_markup=reply_markup)
+
+    return DELETE_WAITING_FOR_NUMBER
+
+async def handle_delete_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    if text.lower() == "отмена":
+        return await cancel_adding(update, context)
+
+    try:
+        index = int(text) - 1
+        books = context.user_data['books_for_deletion']
+        if index < 0 or index >= len(books):
+            raise ValueError
+        book = books[index]
+        title, author, rating, read_date = book
+
+        context.user_data['book_to_delete'] = book
+        context.user_data['delete_index'] = index
+
+        keyboard = [["Да", "Отмена"]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+
+        await update.message.reply_text(
+            f"Подтвердите удаление:\n{author} «{title}»",
+            reply_markup=reply_markup
+        )
+        return DELETE_CONFIRM
+
+    except (ValueError, IndexError):
+        await update.message.reply_text("❌ Неверный номер. Введите число из списка:")
+        return DELETE_WAITING_FOR_NUMBER
+
+async def confirm_delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    if text.lower() in ("отмена", "нет"):
+        return await cancel_adding(update, context)
+
+    if text.lower() not in ("да", "yes"):
+        await update.message.reply_text("Пожалуйста, нажмите «Да» или «Отмена».")
+        return DELETE_CONFIRM
+
+    user_id = update.effective_user.id
+    book = context.user_data['book_to_delete']
+    title, author, _, read_date = book
+
+    success = delete_book_by_user_and_date(user_id, title, author, read_date)
+
+    if success:
+        await update.message.reply_text("✅ Книга удалена!", reply_markup=get_main_menu())
+    else:
+        await update.message.reply_text("❌ Не удалось найти книгу для удаления.", reply_markup=get_main_menu())
+
     return ConversationHandler.END

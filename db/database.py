@@ -74,3 +74,16 @@ def get_books_count_by_year(user_id: int) -> list[tuple]:
     result = cursor.fetchall()
     conn.close()
     return result
+
+def delete_book_by_user_and_date(user_id: int, title: str, author: str, read_date: str):
+    """Удаляет конкретную книгу по совпадению всех полей."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        DELETE FROM books
+        WHERE user_id = ? AND title = ? AND author = ? AND read_date = ?
+    ''', (user_id, title, author, read_date))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
