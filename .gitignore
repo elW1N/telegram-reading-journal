@@ -7,3 +7,4 @@ python_find_user.py
 venv/
 .env
 python find_user.py
+books.db books.db
