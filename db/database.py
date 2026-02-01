@@ -42,3 +42,16 @@ def delete_book_by_user_and_date(user_id: int, title: str, author: str, read_dat
                 WHERE user_id = %s AND title = %s AND author = %s AND read_date = %s
             ''', (user_id, title, author, read_date))
             return cursor.rowcount > 0
+
+def get_books_count_by_year(user_id: int) -> dict:
+    """Возвращает словарь: {год: количество книг} для пользователя."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('''
+                SELECT EXTRACT(YEAR FROM read_date) AS year, COUNT(*) AS count
+                FROM books
+                WHERE user_id = %s
+                GROUP BY year
+                ORDER BY year DESC
+            ''', (user_id,))
+            return {int(year): count for year, count in cursor.fetchall()}
