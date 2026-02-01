@@ -24,6 +24,10 @@ async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 🔍 Выводим user_id в логи (только для отладки!)
+    user_id = update.effective_user.id
+    print(f"✅ Твой user_id: {user_id}")
+
     # Создаём клавиатуру
     keyboard = [
         ["Добавить книгу", "Список"],
