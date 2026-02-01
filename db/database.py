@@ -12,7 +12,6 @@ def get_db_connection():
     )
 
 def init_db():
-    # Таблица создаётся вручную в Supabase
     pass
 
 def add_book(title: str, author: str, rating: int, user_id: int):
@@ -55,3 +54,15 @@ def get_books_count_by_year(user_id: int) -> dict:
                 ORDER BY year DESC
             ''', (user_id,))
             return {int(year): count for year, count in cursor.fetchall()}
+        
+def get_all_years(user_id: int) -> list[str]:
+    """Возвращает список годов (в виде строк), в которые пользователь читал книги."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('''
+                SELECT DISTINCT EXTRACT(YEAR FROM read_date) AS year
+                FROM books
+                WHERE user_id = %s
+                ORDER BY year DESC
+            ''', (user_id,))
+            return [str(int(row[0])) for row in cursor.fetchall()]
