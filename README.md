@@ -10,7 +10,6 @@
 - Python 3.11+
 - `python-telegram-bot`
 - SQLite (локальное хранилище)
-- Railway.app (хостинг)
 
 ## ▶️ Как запустить
 1. Создайте `.env`:
