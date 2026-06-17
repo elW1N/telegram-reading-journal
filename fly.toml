@@ -1,0 +1,11 @@
+[app]
+name = "book-bot-tg"
+primary_region = "fra"
+
+[build]
+
+[env]
+
+[mounts]
+source = "books_data"
+destination = "/app/data"

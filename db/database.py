@@ -2,7 +2,7 @@ import os
 import sqlite3
 from datetime import date
 
-DB_PATH = os.getenv("DB_PATH", "books.db")
+DB_PATH = os.getenv("DB_PATH", "/app/data/books.db")
 
 def get_conn():
     return sqlite3.connect(DB_PATH)
