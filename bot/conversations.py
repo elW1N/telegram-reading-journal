@@ -14,7 +14,7 @@ from db.database import get_books_by_year, get_all_years, add_book, delete_book_
 from bot.handlers import get_main_menu
 
 
-# === ДИАЛОГ: ДОБАВЛЕНИЕ КНИГИ ===
+
 
 async def start_add_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -144,58 +144,6 @@ async def cancel_adding(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-async def handle_rating(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    try:
-        rating = int(text)
-    except ValueError:
-        await update.message.reply_text(
-            '❌ Пожалуйста, введите число от 1 до 5.'
-        )
-        return ADD_RATING
-
-    if not (1 <= rating <= 5):
-        await update.message.reply_text('❌ Оценка должна быть от 1 до 5.')
-        return ADD_RATING
-
-    context.user_data['rating'] = rating
-
-    author = context.user_data['author']
-    title = context.user_data['title']
-
-    keyboard = [["Да", "Отмена"]]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
-        )
-
-    await update.message.reply_text(
-        f'Подтвердите запись:\n'
-        f'{author} "{title}" — {rating}/5\n\n'
-        f'Если всё верно - нажмите ДА.',
-        parse_mode='HTML',
-        reply_markup=reply_markup
-    )
-
-    return ADD_CONFIRM
-
-async def confirm_book(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from db.database import add_book
-    user_id = update.effective_user.id
-    author = context.user_data['author']
-    title = context.user_data['title']
-    rating = context.user_data['rating']
-
-    add_book(title, author, rating, user_id)
-
-    await update.message.reply_text(
-        f'✅ Книга сохранена!\n'
-        f'{author} "{title}" — {rating}/5',
-        reply_markup=get_main_menu()
-    )
-    return ConversationHandler.END
-
 # === ДИАЛОГ: ПРОСМОТР КНИГ ===
 
 async def start_view_books(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -271,14 +219,6 @@ async def handle_invalid_year_input(
         "Пожалуйста, введите год в формате YYYY (например, 2025)."
     )
     return "WAITING_FOR_YEAR"
-
-async def cancel_adding(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Отмена добавления книги."""
-    await update.message.reply_text(
-        "❌ Добавление книги отменено.",
-        reply_markup=get_main_menu()
-    )
-    return ConversationHandler.END
 
 async def start_delete_from_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     books = context.user_data.get('books_for_deletion')
